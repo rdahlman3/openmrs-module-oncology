@@ -202,36 +202,39 @@ response:
 Proposal
 ========
 Several objects in the data model are missing fields that are necessary for the chemotherapy regimen ordering workflow. These objects and the missing fields are:
-- Drug
-    - Maximum lifetime dose
 - OrderGroup
     - Cycle number
     - Physician notes
-    - Indication (Chemotherapy/HIV)
+    - Category (Chemotherapy, HIV, etc)
     - Number of cycles in the regimen
     - Length of the cycles in the regimen
     - Previous Order Group
 - OrderSet
-    - Indication (Chemotherapy/HIV)
+    - Category (Chemotherapy, HIV, etc)
     - Number of cycles typical in the regimen
     - Length of cycles typical in the regimen
 - DrugOrder
     - Dosing reduction
-    - Relative start day
-    - Chemo administration group (Indication - Premedication, Chemotherapy, Post Medication)
+    - Chemo administration group (Premedication, Chemotherapy, Post Medication)
+- Maximum lifetime dose
+- Drug
+    - Units for the maximum daily dose
 
-For Drug, maximum lifetime dose is a fundamental quality of the drug, therefore the Drug class should have the necessary fields added to the core data model. The fields added would be maximumLifetimeDose and doseLimitUnits to denote the units for the various max and min fields.
+On OrderGroup, physician notes will exist as an Observation on the Encounter associated with the OrderGroup. Category will exist on the OrderGroup class. We will extend the table via attributes, and create AttributeTypes for the rest of the missing fields.
 
-<img src="images/DrugTable.png" width="500" height="383">
+OrderSet Category will be on the existing table, and the rest of the missing fields will be AttributeTypes, as we will also extend OrderSets via attributes.
 
-OrderGroup and OrderSet would be extended via attribute tables, which would involve changing the parent class of both java classes from Changeable to Customizable. An Attribute and AttributeType table would be created for both OrderGroup and OrderSet, and the AttributeTypes in each table would be the missing fields.
+Extending via attributes will require changing the base class of OrderGroup and OrderSet from Changeable to Customizable.
 
 <img src="images/OrderSetExt.png" width="600" height="514">
 
-In order to add the necessary fields to DrugOrder, we propose extending the DrugOrder class in a new class called ChemoOrder.
+One option for handling the missing Order fields would be to put the chemo administration group in the Order.orderReason field, and serialize the dosing reduction in the DrugOrder.dosingReduction field, as that was the intended use of the field according to [this wiki](https://wiki.openmrs.org/pages/viewpage.action?pageId=34146504). We also are considering adding the extending the DrugOrder class in a new class called ChemoOrder.
 
 <img src="images/ChemoOrderExt.png" width="600" height="292">
 
+For maximum lifetime dose, it is typically associated with the drug concept or ingredient, and not a specific formulation. As such, we will associate the maximum lifetime dose to a drug's Concept via ConceptAttributes.
+
+The maxiumum daily dose for a Drug already exists in the Drug table, but there are no units associated with that field, so we will add a doseLimitUnits field to Drug to capture the units for the Drug's maxiumumDailyDose and minimumDailyDose.
 
 Extended Content
 ================
