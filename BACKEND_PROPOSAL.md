@@ -172,6 +172,8 @@ OT_UC1 - Authoring an oncology regimen templates for use in EMR solution
           brew install libyaml
           sudo python -m easy_install pyyaml
           sudo pip install requests
+          sudo pip install objdict
+          sudo pip install enum
        
     3. test python+yaml lib is working
        ```
@@ -199,8 +201,38 @@ response:
 
 Proposal
 ========
+Several objects in the data model are missing fields that are necessary for the chemotherapy regimen ordering workflow. These objects and the missing fields are:
+- OrderSet
+    - Category (Chemotherapy, HIV, etc)
+    - Number of cycles typical in the regimen
+    - Length of cycles typical in the regimen
+- OrderGroup
+    - Cycle number
+    - Physician notes
+    - Reason for Order (Chemotherapy, HIV, etc)
+    - Number of cycles in the regimen
+    - Length of the cycles in the regimen
+    - Previous Order Group
+    - Parent Order Group
+- DrugOrder
+    - Dosing reduction
+    - Should the dosing reduction apply to subsequent cycles?
+- Maximum lifetime dose
+- Drug
+    - Units for the maximum daily dose
 
 
+For OrderSet, the Category field will contain a reference to a Concept which describes what a particular OrderSet is typically used to treat. If an OrderSet is used for multiple situations, the Concept for the OrderSet would be a Concept of type Set, which has the multiple Concepts as members of the Set. OrderSet will also be extended via attributes to hold the attributes of number of cycles and length of the cycles. In order to support the grouping of Premedications, Chemotherapy medications, and Post Medications in a regimen, and OrderSet will be created for each, and the regimen OrderSet will contain references to 
+
+OrderGroup will contain a field called "orderGroupReason" which will be a Concept denoting the reason the OrderGroup was "ordered". Physician notes will be contained in an Observation in the Encounter associated with the OrderGroup, as will information such as the calculated dosage and the actual administered dosage. The fields PreviousOrderGroup and ParentOrderGroup will be added to the OrderGroup object to support linking OrderGroups as well as OrderGroup nesting. OrderGroup nesting will be used to group chemotherapy cycles into Premedications, Chemotherapy medications, and Post medications. OrderGroup will also be extended via attributes to associate the fields of cycle number, the number of total cycles in the regimen at that point in time, and the length of the cycles in the regimen.
+
+For dosing reduction, we will implement a new dosing type to capture the dosing reduction. This will capture the percent of the reduction, as well as if the reduction is temporary (applies to just the medication for this cycle), or if it should apply to subsequent orders of this medication in future cycles.
+
+For maximum lifetime dose, it is typically associated with the drug concept or ingredient, and not a specific formulation. As such, we will associate the maximum lifetime dose to a drug's Concept via ConceptAttributes.
+
+Drug currently has a maximumDailyDose field (which is a double), but no concept of the units associated with it. We are intending to add a doseLimitUnits field to the table which is the Concept referring to the particular units that the max and min daily dose fields use.
+
+We would like to capture the concentration of a drug in a more concrete form than just in the name of the Drug, as we need to fetch that value for calculating the dosage in our application. We will store the concentration value and its units serialized in the strength field of the Drug.
 
 Extended Content
 ================
